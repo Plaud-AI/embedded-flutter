@@ -1,3 +1,6 @@
+# Plaud demo credentials (compile-time defines; see .env.example)
+.env
+
 # Miscellaneous
 *.class
 *.log

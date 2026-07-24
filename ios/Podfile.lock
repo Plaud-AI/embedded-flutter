@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - plaud_sdk (0.1.0):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - plaud_sdk (from `.symlinks/plugins/plaud_sdk/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  plaud_sdk:
+    :path: ".symlinks/plugins/plaud_sdk/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  plaud_sdk: b93947b3bbd925fbe93fbc56288723520c52513e
+
+PODFILE CHECKSUM: 5e85ac3d90f56bc49ab5fb095ce410d382948cd0
+
+COCOAPODS: 1.17.0
