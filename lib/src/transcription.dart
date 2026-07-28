@@ -149,27 +149,45 @@ Future<String> _submitTranscription(String fileUrl, StatusFn? onStatus) async {
 }
 
 /// Pull the transcript text out of the poll response, whatever shape it
-/// arrives in.
+/// arrives in. The partner API's completed response nests the transcript under
+/// `data` as either a flat `text` string or a `results`/`segments` array of
+/// `{ text }` items (see the Capacitor demo's `TranscriptionTask` type).
 String _extractTranscript(dynamic data) {
   if (data is! Map) return '';
-  final text = data['text'];
-  if (text is String && text.trim().isNotEmpty) return text;
-  final results = data['results'];
-  if (results is List) {
-    return results
-        .map((r) => (r is Map ? r['text'] : null) ?? '')
-        .where((t) => (t as String).isNotEmpty)
-        .join('\n\n');
+
+  // Flat transcript strings, under any of the keys the API has been seen to use.
+  for (final key in const ['text', 'full_text', 'transcript', 'transcription']) {
+    final v = data[key];
+    if (v is String && v.trim().isNotEmpty) return v.trim();
   }
-  final segments = data['segments'];
-  if (segments is List) {
-    return segments
-        .map((s) => (s is Map ? s['text'] : null) ?? '')
-        .where((t) => (t as String).isNotEmpty)
-        .join(' ');
+
+  // Segment arrays: each item carries its own `text`.
+  for (final key in const ['results', 'segments']) {
+    final list = data[key];
+    if (list is List) {
+      final joined = list
+          .map((r) => (r is Map ? r['text'] : null))
+          .whereType<String>()
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .join('\n\n');
+      if (joined.isNotEmpty) return joined;
+    }
   }
+
+  // Some responses wrap the payload one level deeper in a nested `data`.
+  if (data['data'] is Map) return _extractTranscript(data['data']);
   return '';
 }
+
+/// True once the task reaches a state where the transcript will never change —
+/// mirrors the Capacitor runner's `TERMINAL_STATUSES` so a completed SUCCESS
+/// always ends the poll instead of hanging on a text-extraction miss.
+bool _isSuccessStatus(String s) =>
+    s.contains('SUCCESS') || s == 'DONE' || s == 'COMPLETED' || s == 'FINISHED';
+
+bool _isFailureStatus(String s) =>
+    s.contains('FAIL') || s.contains('ERROR') || s.contains('REVOK');
 
 Future<String> _pollTranscription(
   String transcriptionId,
@@ -184,16 +202,23 @@ Future<String> _pollTranscription(
       headers: _transcriptionHeaders(),
     ));
     final data = (res is Map ? res['data'] : null) ?? res;
-    final transcript = _extractTranscript(data);
-    if (transcript.isNotEmpty) return transcript;
-
     final status =
         '${(res is Map ? res['status'] : null) ?? (data is Map ? data['task_status'] : null) ?? ''}'
             .toUpperCase();
-    if (status.contains('FAIL') || status.contains('ERROR')) {
+
+    // A terminal SUCCESS ends the poll even if the transcript is empty (no
+    // speech) — otherwise the loop hangs on completed tasks and times out.
+    // Gating termination on text extraction, not status, was the original bug.
+    if (_isSuccessStatus(status)) return _extractTranscript(data);
+    if (_isFailureStatus(status)) {
       throw Exception(
           'Transcription failed: ${status.isEmpty ? 'unknown error' : status}');
     }
+
+    // Still processing — but if the text is already present, return early.
+    final transcript = _extractTranscript(data);
+    if (transcript.isNotEmpty) return transcript;
+
     onStatus?.call(
         'transcribing… (${status.isEmpty ? 'processing' : status.toLowerCase()})');
     await Future<void>.delayed(interval);

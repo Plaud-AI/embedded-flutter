@@ -124,10 +124,14 @@ class FileModal extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        // stretch so the transcript box fills the card width; without it the
+        // Column sizes children to their content and the box only spans the
+        // width of the text.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Row(
             spacing: 6,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Icon(PlaudIcons.fileText, size: 14, color: PlaudColors.textFaint),
               Overline('Transcript'),

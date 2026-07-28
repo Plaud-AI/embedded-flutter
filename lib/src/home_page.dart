@@ -51,6 +51,18 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  /// Scan results arrive in discovery order (effectively random). Sort by name
+  /// (case-insensitive), falling back to uuid so the ordering is stable across
+  /// rescans when two devices share a name or have none.
+  List<PlaudScanDevice> _sortDevices(List<PlaudScanDevice> found) {
+    final sorted = [...found];
+    sorted.sort((a, b) {
+      final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      return byName != 0 ? byName : a.uuid.compareTo(b.uuid);
+    });
+    return sorted;
+  }
+
   void _updateResult(int sessionId, FileResult Function(FileResult) patch) {
     if (!mounted) return;
     setState(() {
@@ -97,7 +109,7 @@ class _HomePageState extends State<HomePage> {
     if (!isPlaudSdkAvailable) return;
 
     _subs.addAll([
-      PlaudSdk.onScanResult.listen((found) => setState(() => _devices = found)),
+      PlaudSdk.onScanResult.listen((found) => setState(() => _devices = _sortDevices(found))),
       PlaudSdk.onScanTimeout.listen((reason) {
         setState(() {
           _scanning = false;
@@ -559,7 +571,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const Icon(PlaudIcons.fileAudio,
                     size: 18, color: PlaudColors.textLight),
-                Mono('#${f.sessionId}'),
+                Flexible(child: Mono('#${f.sessionId}', maxLines: 1)),
                 if (r?.status == FileResultStatus.ready)
                   const Row(
                     spacing: 4,
@@ -579,10 +591,13 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          Mono(
-            '${f.duration}s · ${(f.size / 1024).toStringAsFixed(0)} KB',
-            size: 12,
-            color: PlaudColors.textFaint,
+          Flexible(
+            child: Mono(
+              '${f.duration}s · ${(f.size / 1024).toStringAsFixed(0)} KB',
+              size: 12,
+              color: PlaudColors.textFaint,
+              maxLines: 1,
+            ),
           ),
         ],
       ),
