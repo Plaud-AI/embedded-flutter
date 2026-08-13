@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-written POM for the vendored Plaud Android SDK.
+
+  The SDK ships as a bare .aar with no published metadata. It cannot be consumed
+  with `implementation(files(...))`: the Flutter Gradle plugin builds each plugin
+  project's AAR, and AGP refuses to bundle an AAR that has direct local .aar file
+  dependencies. Giving it Maven coordinates in this checked-in repo turns it into
+  an ordinary module dependency, which bundles cleanly.
+
+  Dependencies are deliberately NOT listed here — the SDK's transitive deps are
+  declared in ../../../../../../build.gradle.kts, next to the comment explaining
+  where they come from.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>ai.plaud.sdk</groupId>
+  <artifactId>plaud-sdk</artifactId>
+  <version>1.0.0</version>
+  <packaging>aar</packaging>
+</project>
