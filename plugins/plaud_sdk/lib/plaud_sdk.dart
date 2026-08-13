@@ -1,8 +1,13 @@
-/// Flutter bridge for the Plaud iOS device SDK.
+/// Flutter bridge for the Plaud device SDK.
 ///
 /// Mirrors the React Native demo's `plaud-sdk` Expo module: the same nine
-/// methods and twelve events over `PlaudDeviceAgent`. iOS-only — the vendored
-/// Plaud frameworks are arm64 device builds, so run on a physical iPhone.
+/// methods and twelve events over `PlaudDeviceAgent`, implemented twice —
+/// `ios/Classes/PlaudSdkPlugin.swift` and
+/// `android/src/main/kotlin/ai/plaud/plaud_sdk/PlaudSdkPlugin.kt` — against the
+/// same channel names and payload keys, so nothing here branches on platform.
+///
+/// Physical devices only: the vendored iOS frameworks are arm64 device builds,
+/// and BLE does not exist on the Android emulator.
 library;
 
 import 'dart:async';
@@ -15,10 +20,9 @@ import 'src/types.dart';
 
 export 'src/types.dart';
 
-/// Whether the native Plaud SDK can exist on this platform. The frameworks
-/// are iOS-device-only; guard every call behind this (mirrors `isAvailable`
-/// in the RN bridge).
-bool get isPlaudSdkAvailable => !kIsWeb && Platform.isIOS;
+/// Whether the native Plaud SDK can exist on this platform — iOS and Android
+/// only. Guard every call behind this (mirrors `isAvailable` in the RN bridge).
+bool get isPlaudSdkAvailable => !kIsWeb && (Platform.isIOS || Platform.isAndroid);
 
 class PlaudSdk {
   PlaudSdk._();
@@ -48,7 +52,8 @@ class PlaudSdk {
       );
 
   /// `scanTimeout` — the SDK gave up scanning. `reason` is
-  /// `bluetoothNotPoweredOn` when Bluetooth never became available.
+  /// `bluetoothNotPoweredOn` when Bluetooth never became available, or (Android
+  /// only) `permissionDenied` when the user refused the BLE permissions.
   static Stream<String?> get onScanTimeout =>
       _on('scanTimeout').map((e) => e['reason'] as String?);
 
@@ -106,7 +111,8 @@ class PlaudSdk {
   }
 
   /// Start a BLE scan. Results stream in via [onScanResult]; the native side
-  /// waits (up to ~18 s) for Bluetooth to power on before actually scanning.
+  /// waits (up to ~18 s) for Bluetooth to power on before actually scanning,
+  /// and on Android first prompts for the runtime BLE permissions.
   static Future<void> startScan() => _methods.invokeMethod('startScan');
 
   static Future<void> stopScan() => _methods.invokeMethod('stopScan');
@@ -141,8 +147,9 @@ class PlaudSdk {
   static Future<void> getFileList({int startSessionId = 0}) =>
       _methods.invokeMethod('getFileList', {'startSessionId': startSessionId});
 
-  /// Decode a recording to a local audio file (Documents/PlaudExports).
-  /// Progress streams via [onExportProgress]; resolves with the output path.
+  /// Decode a recording to a local audio file (iOS `Documents/PlaudExports`,
+  /// Android the app's private `files/PlaudExports`). Progress streams via
+  /// [onExportProgress]; resolves with the output path.
   static Future<PlaudExportResult> exportAudio({
     required int sessionId,
     PlaudAudioFormat format = PlaudAudioFormat.mp3,

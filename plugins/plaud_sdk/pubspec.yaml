@@ -1,5 +1,5 @@
 name: plaud_sdk
-description: Flutter bridge for the Plaud iOS device SDK — BLE scan/connect, on-device recording list, and audio export.
+description: Flutter bridge for the Plaud device SDK (iOS + Android) — BLE scan/connect, on-device recording list, and audio export.
 version: 0.1.0
 publish_to: none
 
@@ -18,4 +18,7 @@ flutter:
   plugin:
     platforms:
       ios:
+        pluginClass: PlaudSdkPlugin
+      android:
+        package: ai.plaud.plaud_sdk
         pluginClass: PlaudSdkPlugin

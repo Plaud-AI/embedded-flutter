@@ -11,14 +11,14 @@ Flutter plugin for the Plaud Embedded SDK. If you have a Flutter app, try the pl
    - `PLAUD_ACCESS_TOKEN` — per-user JWT, used for `initSDK` and file upload.
    - `PLAUD_CLIENT_ID` / `PLAUD_API_KEY` — partner credentials for the
      transcription API.
-2. Open `ios/Runner.xcworkspace` once to set your signing team (Runner →
-   Signing & Capabilities).
+2. For iOS, open `ios/Runner.xcworkspace` once to set your signing team
+   (Runner → Signing & Capabilities). Android needs no setup step.
 
 ### Run
 
 ```sh
 flutter pub get
-flutter run --dart-define-from-file=.env   # with an iPhone plugged in
+flutter run --dart-define-from-file=.env   # with an iPhone or Android phone plugged in
 ```
 
 The credentials are compile-time defines — `--dart-define-from-file=.env` is
@@ -33,9 +33,11 @@ token and proxy upload/transcription through your backend.
 
 `plugins/plaud_sdk/` is a self-contained Flutter plugin — you can drop it into
 any Flutter app to get BLE scan/connect, on-device recording events, file
-listing, and audio export. It's iOS-device-only (same arm64 constraint as
-above), and everything is event-driven: method calls kick off work, results
-arrive on typed streams.
+listing, and audio export. It covers iOS and Android behind one Dart API — the
+Swift and Kotlin bridges implement the same nine methods and twelve events, so
+your code never branches on platform. Use a real phone (the iOS frameworks are
+arm64 device-only, and an Android emulator has no BLE radio). Everything is
+event-driven: method calls kick off work, results arrive on typed streams.
 
 ### Try the Embedded Flutter Skill
 
@@ -51,9 +53,10 @@ npx skills add Plaud-AI/embedded_flutter
 cp -R plugins/plaud_sdk /path/to/your-app/plugins/plaud_sdk
 ```
 
-The `.xcframework`s under `plugins/plaud_sdk/ios/Frameworks/` are large
-binaries — make sure they copy over (a shallow copy that drops them breaks the
-link).
+The vendored SDK binaries are large — make sure they copy over (a shallow copy
+that drops them breaks the build): the `.xcframework`s under
+`plugins/plaud_sdk/ios/Frameworks/`, and the `.aar` under
+`plugins/plaud_sdk/android/m2repo/`.
 
 ### 2. Depend on it via a path reference
 
@@ -68,8 +71,8 @@ dependencies:
 flutter pub get
 ```
 
-Flutter's plugin autolinking handles the rest — no manual Podfile or Xcode
-edits.
+Flutter's plugin autolinking handles the rest — no manual Podfile, Xcode, or
+Gradle edits.
 
 ### 3. Configure iOS
 
@@ -87,6 +90,13 @@ edits.
     <string>bluetooth-central</string>
   </array>
   ```
+
+### 3b. Configure Android
+
+Nothing to do. `minSdk` must be **24 or higher** (Flutter's default already
+is), and the BLE permissions merge into your manifest from the plugin — the
+plugin requests the runtime ones itself when you call `startScan`, so there's
+no permission library to add.
 
 ### 4. Use it from Dart
 
@@ -119,7 +129,8 @@ final export = await PlaudSdk.exportAudio(
   sessionId: file.sessionId,
   format: PlaudAudioFormat.mp3,
 );
-// export.outputPath → the decoded mp3 under Documents/PlaudExports
+// export.outputPath → the decoded mp3 under the app's PlaudExports directory
+//                     (iOS Documents/, Android the private files/ dir)
 ```
 
 `lib/src/home_page.dart` is the complete, production-shaped reference
