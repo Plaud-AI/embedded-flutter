@@ -74,7 +74,7 @@ flutter pub get
 Flutter's plugin autolinking handles the rest — no manual Podfile, Xcode, or
 Gradle edits.
 
-### 3. Configure iOS
+### 3a. For iOS, configure permissions
 
 - Set the deployment target to **15.1** in `ios/Podfile`
   (`platform :ios, '15.1'`) and the Runner Xcode target. The Plaud frameworks
@@ -91,10 +91,9 @@ Gradle edits.
   </array>
   ```
 
-### 3b. Configure Android
+### 3b. For Android, permission configs are already setup
 
-Nothing to do. `minSdk` must be **24 or higher** (Flutter's default already
-is), and the BLE permissions merge into your manifest from the plugin — the
+The BLE permissions merge into your manifest from the plugin. The
 plugin requests the runtime ones itself when you call `startScan`, so there's
 no permission library to add.
 

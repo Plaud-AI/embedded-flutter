@@ -12,8 +12,9 @@ Two things the native plugin does **not** do — both are your app/backend's res
   `.env.example`) holds the value, and every run/build must pass it:
 
   ```sh
-  flutter run  --dart-define-from-file=.env
-  flutter build ios --no-codesign --dart-define-from-file=.env
+  flutter run --dart-define-from-file=.env                       # iPhone or Android phone
+  flutter build ios --no-codesign --dart-define-from-file=.env   # iOS link check
+  flutter build apk --debug --dart-define-from-file=.env         # Android compile check
   ```
 
   `lib/src/config.dart` reads the defines with `String.fromEnvironment`:
